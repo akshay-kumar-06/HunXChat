@@ -6,4 +6,5 @@ elevenlabs
 langdetect
 python-dotenv
 python-multipart
-traceback
+
+
