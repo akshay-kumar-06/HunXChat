@@ -1,0 +1,586 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>HunXChat - Voice AI</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #0a0a0a 0%, #1a0a2e 50%, #0a0a0a 100%);
+            color: #ffffff;
+            overflow: hidden;
+            height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .container {
+            text-align: center;
+            position: relative;
+            z-index: 10;
+            max-width: 800px;
+            padding: 20px;
+        }
+
+        h1 {
+            font-size: 2.5rem;
+            margin-bottom: 10px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .subtitle {
+            color: #888;
+            margin-bottom: 40px;
+            font-size: 1.1rem;
+        }
+
+        #orbCanvas {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            z-index: 1;
+            pointer-events: none;
+        }
+
+        .status {
+            display: inline-block;
+            padding: 12px 24px;
+            border-radius: 50px;
+            background: rgba(255, 255, 255, 0.05);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            margin: 20px 0;
+            font-size: 1rem;
+            transition: all 0.3s ease;
+        }
+
+        .status.listening {
+            background: rgba(102, 126, 234, 0.2);
+            border-color: rgba(102, 126, 234, 0.5);
+            box-shadow: 0 0 20px rgba(102, 126, 234, 0.3);
+        }
+
+        .status.processing {
+            background: rgba(118, 75, 162, 0.2);
+            border-color: rgba(118, 75, 162, 0.5);
+            box-shadow: 0 0 20px rgba(118, 75, 162, 0.3);
+        }
+
+        .status.speaking {
+            background: rgba(236, 72, 153, 0.2);
+            border-color: rgba(236, 72, 153, 0.5);
+            box-shadow: 0 0 20px rgba(236, 72, 153, 0.3);
+        }
+
+        .controls {
+            margin-top: 30px;
+            display: flex;
+            gap: 20px;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+
+        .btn {
+            padding: 15px 30px;
+            border: none;
+            border-radius: 50px;
+            font-size: 1rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            background: rgba(255, 255, 255, 0.1);
+            color: white;
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+
+        .btn:hover {
+            background: rgba(255, 255, 255, 0.2);
+            transform: translateY(-2px);
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+        }
+
+        .btn:active {
+            transform: translateY(0);
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border: none;
+        }
+
+        .btn-primary:hover {
+            box-shadow: 0 10px 40px rgba(102, 126, 234, 0.4);
+        }
+
+        .transcript {
+            margin-top: 40px;
+            padding: 20px;
+            background: rgba(255, 255, 255, 0.03);
+            border-radius: 15px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            min-height: 100px;
+            max-height: 300px;
+            overflow-y: auto;
+            text-align: left;
+            backdrop-filter: blur(10px);
+        }
+
+        .message {
+            margin: 15px 0;
+            padding: 10px 15px;
+            border-radius: 10px;
+            animation: fadeIn 0.3s ease;
+        }
+
+        .message.user {
+            background: rgba(102, 126, 234, 0.2);
+            border-left: 3px solid #667eea;
+        }
+
+        .message.ai {
+            background: rgba(118, 75, 162, 0.2);
+            border-left: 3px solid #764ba2;
+        }
+
+        .message strong {
+            display: block;
+            margin-bottom: 5px;
+            font-size: 0.9rem;
+            opacity: 0.7;
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(10px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .error {
+            color: #ff6b6b;
+            margin-top: 20px;
+            padding: 10px;
+            background: rgba(255, 107, 107, 0.1);
+            border-radius: 10px;
+            border: 1px solid rgba(255, 107, 107, 0.3);
+        }
+
+        .transcript::-webkit-scrollbar {
+            width: 8px;
+        }
+
+        .transcript::-webkit-scrollbar-track {
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 10px;
+        }
+
+        .transcript::-webkit-scrollbar-thumb {
+            background: rgba(102, 126, 234, 0.5);
+            border-radius: 10px;
+        }
+
+        .transcript::-webkit-scrollbar-thumb:hover {
+            background: rgba(102, 126, 234, 0.7);
+        }
+    </style>
+</head>
+<body>
+    <canvas id="orbCanvas"></canvas>
+    
+    <div class="container">
+        <h1>🎙️ HunXChat</h1>
+        <p class="subtitle">Voice AI Assistant powered by Akshay's Persona</p>
+        
+        <div class="status" id="status">Ready to listen...</div>
+        
+        <div class="controls">
+            <button class="btn btn-primary" id="toggleBtn">Start Listening</button>
+            <button class="btn" id="clearBtn">Clear Chat</button>
+        </div>
+
+        <div class="transcript" id="transcript">
+            <div class="message ai">
+                <strong>HunXChat:</strong>
+                Hello! I'm ready to chat. Start speaking and I'll respond automatically.
+            </div>
+        </div>
+
+        <div class="error" id="error" style="display: none;"></div>
+    </div>
+
+    <script>
+        // ⚠️ IMPORTANT: Change this to your Railway backend URL after deployment
+        const API_BASE_URL = 'http://localhost:8000';
+        
+        let isListening = false;
+        let recognition = null;
+        let audioContext = null;
+        let analyser = null;
+        let dataArray = null;
+        let currentAudio = null;
+
+        const canvas = document.getElementById('orbCanvas');
+        const ctx = canvas.getContext('2d');
+        const statusEl = document.getElementById('status');
+        const toggleBtn = document.getElementById('toggleBtn');
+        const clearBtn = document.getElementById('clearBtn');
+        const transcriptEl = document.getElementById('transcript');
+        const errorEl = document.getElementById('error');
+
+        canvas.width = window.innerWidth;
+        canvas.height = window.innerHeight;
+
+        window.addEventListener('resize', () => {
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+        });
+
+        let orbState = 'idle';
+        let particles = [];
+        let audioLevel = 0;
+
+        class Particle {
+            constructor(x, y) {
+                this.x = x;
+                this.y = y;
+                this.size = Math.random() * 2 + 1;
+                this.speedX = Math.random() * 2 - 1;
+                this.speedY = Math.random() * 2 - 1;
+                this.life = 1;
+            }
+
+            update() {
+                this.x += this.speedX;
+                this.y += this.speedY;
+                this.life -= 0.01;
+            }
+
+            draw() {
+                ctx.fillStyle = `rgba(102, 126, 234, ${this.life * 0.5})`;
+                ctx.beginPath();
+                ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
+                ctx.fill();
+            }
+        }
+
+        function drawOrb() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            const centerX = canvas.width / 2;
+            const centerY = canvas.height / 2;
+            let baseRadius = 80;
+            let pulseSpeed = 0.02;
+            let glowIntensity = 0.3;
+
+            if (orbState === 'listening') {
+                baseRadius = 80 + audioLevel * 50;
+                pulseSpeed = 0.05;
+                glowIntensity = 0.6;
+            } else if (orbState === 'processing') {
+                baseRadius = 90;
+                pulseSpeed = 0.08;
+                glowIntensity = 0.5;
+            } else if (orbState === 'speaking') {
+                baseRadius = 85 + audioLevel * 40;
+                pulseSpeed = 0.04;
+                glowIntensity = 0.7;
+            }
+
+            const time = Date.now() * pulseSpeed;
+            const radius = baseRadius + Math.sin(time) * 10;
+
+            for (let i = 0; i < 3; i++) {
+                const glowRadius = radius + (i * 40);
+                const gradient = ctx.createRadialGradient(centerX, centerY, radius, centerX, centerY, glowRadius);
+                
+                if (orbState === 'listening') {
+                    gradient.addColorStop(0, `rgba(102, 126, 234, ${glowIntensity * (1 - i * 0.3)})`);
+                    gradient.addColorStop(1, 'rgba(102, 126, 234, 0)');
+                } else if (orbState === 'processing') {
+                    gradient.addColorStop(0, `rgba(118, 75, 162, ${glowIntensity * (1 - i * 0.3)})`);
+                    gradient.addColorStop(1, 'rgba(118, 75, 162, 0)');
+                } else if (orbState === 'speaking') {
+                    gradient.addColorStop(0, `rgba(236, 72, 153, ${glowIntensity * (1 - i * 0.3)})`);
+                    gradient.addColorStop(1, 'rgba(236, 72, 153, 0)');
+                } else {
+                    gradient.addColorStop(0, `rgba(102, 126, 234, ${glowIntensity * 0.3 * (1 - i * 0.3)})`);
+                    gradient.addColorStop(1, 'rgba(102, 126, 234, 0)');
+                }
+
+                ctx.fillStyle = gradient;
+                ctx.beginPath();
+                ctx.arc(centerX, centerY, glowRadius, 0, Math.PI * 2);
+                ctx.fill();
+            }
+
+            const mainGradient = ctx.createRadialGradient(
+                centerX - radius * 0.3,
+                centerY - radius * 0.3,
+                0,
+                centerX,
+                centerY,
+                radius
+            );
+            
+            if (orbState === 'listening') {
+                mainGradient.addColorStop(0, 'rgba(102, 126, 234, 0.8)');
+                mainGradient.addColorStop(1, 'rgba(102, 126, 234, 0.3)');
+            } else if (orbState === 'processing') {
+                mainGradient.addColorStop(0, 'rgba(118, 75, 162, 0.8)');
+                mainGradient.addColorStop(1, 'rgba(118, 75, 162, 0.3)');
+            } else if (orbState === 'speaking') {
+                mainGradient.addColorStop(0, 'rgba(236, 72, 153, 0.8)');
+                mainGradient.addColorStop(1, 'rgba(236, 72, 153, 0.3)');
+            } else {
+                mainGradient.addColorStop(0, 'rgba(102, 126, 234, 0.4)');
+                mainGradient.addColorStop(1, 'rgba(102, 126, 234, 0.1)');
+            }
+
+            ctx.fillStyle = mainGradient;
+            ctx.beginPath();
+            ctx.arc(centerX, centerY, radius, 0, Math.PI * 2);
+            ctx.fill();
+
+            if (orbState !== 'idle' && Math.random() < 0.3) {
+                const angle = Math.random() * Math.PI * 2;
+                const distance = radius + Math.random() * 20;
+                particles.push(new Particle(
+                    centerX + Math.cos(angle) * distance,
+                    centerY + Math.sin(angle) * distance
+                ));
+            }
+
+            particles = particles.filter(p => p.life > 0);
+            particles.forEach(p => {
+                p.update();
+                p.draw();
+            });
+
+            requestAnimationFrame(drawOrb);
+        }
+
+        function initSpeechRecognition() {
+            if (!('webkitSpeechRecognition' in window) && !('SpeechRecognition' in window)) {
+                showError('Speech recognition is not supported in this browser. Please use Chrome or Edge.');
+                return false;
+            }
+
+            const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+            recognition = new SpeechRecognition();
+            recognition.continuous = true;
+            recognition.interimResults = false;
+            recognition.lang = 'en-US';
+
+            recognition.onresult = async (event) => {
+                const transcript = event.results[event.results.length - 1][0].transcript;
+                console.log('Heard:', transcript);
+                
+                addMessage('user', transcript);
+                await processUserInput(transcript);
+            };
+
+            recognition.onerror = (event) => {
+                console.error('Speech recognition error:', event.error);
+                if (event.error === 'no-speech') {
+                    if (isListening) {
+                        recognition.start();
+                    }
+                } else {
+                    showError(`Speech recognition error: ${event.error}`);
+                }
+            };
+
+            recognition.onend = () => {
+                if (isListening) {
+                    recognition.start();
+                }
+            };
+
+            return true;
+        }
+
+        async function processUserInput(text) {
+            try {
+                orbState = 'processing';
+                updateStatus('Processing...', 'processing');
+
+                const response = await fetch(`${API_BASE_URL}/api/chat`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ text: text })
+                });
+
+                if (!response.ok) {
+                    throw new Error(`API error: ${response.status}`);
+                }
+
+                const data = await response.json();
+                const aiResponse = data.text;
+
+                addMessage('ai', aiResponse);
+                await synthesizeSpeech(aiResponse);
+
+            } catch (error) {
+                console.error('Error processing input:', error);
+                showError('Failed to process your request. Please check if the backend is running.');
+                orbState = isListening ? 'listening' : 'idle';
+                updateStatus(isListening ? 'Listening...' : 'Ready to listen...', isListening ? 'listening' : '');
+            }
+        }
+
+        async function synthesizeSpeech(text) {
+            try {
+                orbState = 'speaking';
+                updateStatus('Speaking...', 'speaking');
+
+                const response = await fetch(`${API_BASE_URL}/api/synthesize`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ text: text })
+                });
+
+                if (!response.ok) {
+                    throw new Error(`Synthesis error: ${response.status}`);
+                }
+
+                const audioBlob = await response.blob();
+                const audioUrl = URL.createObjectURL(audioBlob);
+                
+                if (currentAudio) {
+                    currentAudio.pause();
+                }
+                
+                currentAudio = new Audio(audioUrl);
+                
+                if (!audioContext) {
+                    audioContext = new (window.AudioContext || window.webkitAudioContext)();
+                }
+                
+                const source = audioContext.createMediaElementSource(currentAudio);
+                analyser = audioContext.createAnalyser();
+                analyser.fftSize = 256;
+                source.connect(analyser);
+                analyser.connect(audioContext.destination);
+                
+                dataArray = new Uint8Array(analyser.frequencyBinCount);
+                
+                function updateAudioLevel() {
+                    if (orbState === 'speaking' && currentAudio && !currentAudio.paused) {
+                        analyser.getByteFrequencyData(dataArray);
+                        const average = dataArray.reduce((a, b) => a + b) / dataArray.length;
+                        audioLevel = average / 255;
+                        requestAnimationFrame(updateAudioLevel);
+                    }
+                }
+                
+                currentAudio.onplay = () => {
+                    updateAudioLevel();
+                };
+                
+                currentAudio.onended = () => {
+                    orbState = isListening ? 'listening' : 'idle';
+                    updateStatus(isListening ? 'Listening...' : 'Ready to listen...', isListening ? 'listening' : '');
+                    audioLevel = 0;
+                };
+                
+                await currentAudio.play();
+
+            } catch (error) {
+                console.error('Error synthesizing speech:', error);
+                showError('Failed to synthesize speech. Please check your API keys.');
+                orbState = isListening ? 'listening' : 'idle';
+                updateStatus(isListening ? 'Listening...' : 'Ready to listen...', isListening ? 'listening' : '');
+            }
+        }
+
+        function toggleListening() {
+            if (!recognition && !initSpeechRecognition()) {
+                return;
+            }
+
+            isListening = !isListening;
+
+            if (isListening) {
+                recognition.start();
+                orbState = 'listening';
+                updateStatus('Listening...', 'listening');
+                toggleBtn.textContent = 'Stop Listening';
+                
+                function simulateAudioInput() {
+                    if (orbState === 'listening') {
+                        audioLevel = Math.random() * 0.5 + 0.2;
+                        setTimeout(simulateAudioInput, 100);
+                    }
+                }
+                simulateAudioInput();
+            } else {
+                recognition.stop();
+                orbState = 'idle';
+                updateStatus('Ready to listen...', '');
+                toggleBtn.textContent = 'Start Listening';
+                audioLevel = 0;
+            }
+        }
+
+        function updateStatus(text, className) {
+            statusEl.textContent = text;
+            statusEl.className = 'status ' + className;
+        }
+
+        function addMessage(type, text) {
+            const messageEl = document.createElement('div');
+            messageEl.className = `message ${type}`;
+            messageEl.innerHTML = `<strong>${type === 'user' ? 'You' : 'HunXChat'}:</strong>${text}`;
+            transcriptEl.appendChild(messageEl);
+            transcriptEl.scrollTop = transcriptEl.scrollHeight;
+        }
+
+        function showError(message) {
+            errorEl.textContent = message;
+            errorEl.style.display = 'block';
+            setTimeout(() => {
+                errorEl.style.display = 'none';
+            }, 5000);
+        }
+
+        function clearChat() {
+            transcriptEl.innerHTML = `
+                <div class="message ai">
+                    <strong>HunXChat:</strong>
+                    Hello! I'm ready to chat. Start speaking and I'll respond automatically.
+                </div>
+            `;
+        }
+
+        toggleBtn.addEventListener('click', toggleListening);
+        clearBtn.addEventListener('click', clearChat);
+
+        drawOrb();
+
+        window.addEventListener('load', () => {
+            console.log('HunXChat Voice AI initialized');
+            console.log('API Base URL:', API_BASE_URL);
+        });
+    </script>
+</body>
+</html>
