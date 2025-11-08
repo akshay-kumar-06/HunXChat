@@ -125,7 +125,7 @@ async def synthesize_speech(request: TextRequest):
         # Generate audio
         audio_generator = eleven_client.text_to_speech.convert(
             text=text,
-            voice_id="OYTbf65OHHFELVut7v2H",
+            voice_id="21m00Tcm4TlvDq8ikWAM",
             model_id="eleven_turbo_v2_5"
         )
         
@@ -159,3 +159,4 @@ async def voice_chat(audio: UploadFile = File(...)):
     
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
+
