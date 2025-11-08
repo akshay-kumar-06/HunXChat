@@ -158,5 +158,9 @@ async def voice_chat(audio: UploadFile = File(...)):
         }
     
     except Exception as e:
+        print("--- !!! CRITICAL ERROR IN /api/synthesize !!! ---")
+        print(traceback.format_exc()) # This prints the full error
+        print("--- !!! END OF ERROR REPORT !!! ---")
         raise HTTPException(status_code=500, detail=str(e))
+
 
