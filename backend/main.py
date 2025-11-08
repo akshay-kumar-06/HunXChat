@@ -125,8 +125,8 @@ async def synthesize_speech(request: TextRequest):
         # Generate audio
         audio_generator = eleven_client.text_to_speech.convert(
             text=text,
-            voice_id="21m00Tcm4TlvDq8ikWAM",
-            model_id="eleven_turbo_v2_5"
+            voice_id="JBFqnCBsd6RMkjVDRZzb",
+            model_id="eleven_multilingual_v2"
         )
         
         # Collect audio chunks
@@ -162,6 +162,7 @@ async def voice_chat(audio: UploadFile = File(...)):
         print(traceback.format_exc()) # This prints the full error
         print("--- !!! END OF ERROR REPORT !!! ---")
         raise HTTPException(status_code=500, detail=str(e))
+
 
 
 
