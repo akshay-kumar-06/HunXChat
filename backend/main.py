@@ -24,7 +24,7 @@ app.add_middleware(
 )
 
 # Initialize clients
-ELEVEN_API_KEY = os.getenv("ELEVEN_API_KEY")
+ELEVEN_API_KEY = os.getenv("sk_a4bc52de594e0074c9c1d93cf99467d88d5948935b816f44")
 GEMINI_API_KEY = os.getenv("GEMINI_API_KEY", "AIzaSyCcl_fnRN3I0b_8jCuXUxVpX5J5mYoth0I")
 
 eleven_client = ElevenLabs(api_key=ELEVEN_API_KEY)
@@ -162,6 +162,7 @@ async def voice_chat(audio: UploadFile = File(...)):
         print(traceback.format_exc()) # This prints the full error
         print("--- !!! END OF ERROR REPORT !!! ---")
         raise HTTPException(status_code=500, detail=str(e))
+
 
 
 
