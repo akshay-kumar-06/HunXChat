@@ -8,7 +8,7 @@ from langdetect import detect
 import os
 from dotenv import load_dotenv
 import io
-
+import traceback
 # Load environment variables
 load_dotenv()
 
@@ -162,5 +162,6 @@ async def voice_chat(audio: UploadFile = File(...)):
         print(traceback.format_exc()) # This prints the full error
         print("--- !!! END OF ERROR REPORT !!! ---")
         raise HTTPException(status_code=500, detail=str(e))
+
 
 
