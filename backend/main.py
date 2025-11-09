@@ -8,7 +8,7 @@ from langdetect import detect
 import os
 from dotenv import load_dotenv
 import io
-import traceback
+
 # Load environment variables
 load_dotenv()
 
@@ -25,7 +25,7 @@ app.add_middleware(
 
 # Initialize clients
 ELEVEN_API_KEY = os.getenv("ELEVEN_API_KEY")
-GEMINI_API_KEY = os.getenv("GEMINI_API_KEY","AIzaSyAoSiuVZF_sGsTfX3F0NMitsPMZxtBqAas")
+GEMINI_API_KEY = os.getenv("GEMINI_API_KEY", "AIzaSyAoSiuVZF_sGsTfX3F0NMitsPMZxtBqAas")
 
 eleven_client = ElevenLabs(api_key=ELEVEN_API_KEY)
 openai_client = OpenAI(
@@ -125,8 +125,8 @@ async def synthesize_speech(request: TextRequest):
         # Generate audio
         audio_generator = eleven_client.text_to_speech.convert(
             text=text,
-            voice_id="JBFqnCBsd6RMkjVDRZzb",
-            model_id="eleven_multilingual_v2"
+            voice_id="OYTbf65OHHFELVut7v2H",
+            model_id="eleven_turbo_v2_5"
         )
         
         # Collect audio chunks
@@ -158,14 +158,8 @@ async def voice_chat(audio: UploadFile = File(...)):
         }
     
     except Exception as e:
-        print("--- !!! CRITICAL ERROR IN /api/synthesize !!! ---")
-        print(traceback.format_exc()) # This prints the full error
-        print("--- !!! END OF ERROR REPORT !!! ---")
         raise HTTPException(status_code=500, detail=str(e))
 
-
-
-
-
-
-
+if __name__ == "__main__":
+    import uvicorn
+    uvicorn.run(app, host="localhost", port=8000)
