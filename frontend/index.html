@@ -226,7 +226,7 @@
 
     <script>
         // ⚠️ IMPORTANT: Change this to your Railway backend URL after deployment
-        const API_BASE_URL = 'https://hunxchat.up.railway.app';
+        const API_BASE_URL = 'https://hunxchat.up.railway.app/';
         
         let isListening = false;
         let recognition = null;
@@ -420,7 +420,7 @@
                 orbState = 'processing';
                 updateStatus('Processing...', 'processing');
 
-                const response = await fetch(`${API_BASE_URL}/api/chat`, {
+                const response = await fetch(`${API_BASE_URL}api/chat`, {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
@@ -451,7 +451,7 @@
                 orbState = 'speaking';
                 updateStatus('Speaking...', 'speaking');
 
-                const response = await fetch(`${API_BASE_URL}/api/synthesize`, {
+                const response = await fetch(`${API_BASE_URL}api/synthesize`, {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
@@ -585,4 +585,5 @@
 </body>
 
 </html>
+
 
